@@ -1,6 +1,5 @@
 import { Data, Database } from "dsc.db";
 import { Base } from "./Base";
-import _ from 'lodash';
 
 export class Levels extends Base {
   public db: Database;

@@ -24,12 +24,10 @@
   },
   "homepage": "https://github.com/jurgenjacobsen/dsc.levels#readme",
   "devDependencies": {
-    "@types/lodash": "^4.14.172",
     "typescript": "^4.3.5"
   },
   "dependencies": {
     "dsc.db": "^1.2.2",
-    "events": "^3.3.0",
-    "lodash": "^4.17.21"
+    "events": "^3.3.0"
   }
 }
