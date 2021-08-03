@@ -58,7 +58,7 @@ export class Levels extends Base {
     });
   }
 
-  public add(userID: string, type: XPType, xp: number, lvlCB: levelUpCB): Promise<User> {
+  public add(userID: string, type: XPType, xp: number, lvlCB?: levelUpCB): Promise<User> {
     return new Promise(async (resolve, reject) => {
       if(typeof userID !== 'string') return reject('userID must be provided and string type');
       if(typeof xp !== 'number') return reject('You should provide xp parameter!');
@@ -73,6 +73,7 @@ export class Levels extends Base {
           await this.db.add(`${userID}.textLevel`, 1);
           await this.db.subtract(`${userID}.textXp`, neededXP);
           this.emit('levelup', type, userID, data);
+          if(lvlCB) lvlCB(data);
         }
         return resolve(data);
       } else if(type === 'VOICE') {
@@ -82,7 +83,7 @@ export class Levels extends Base {
           await this.db.add(`${userID}.voiceLevel`, 1);
           await this.db.subtract(`${userID}.voiceXp`, neededXP);
           this.emit('levelup', type, userID, data);
-          lvlCB(data);
+          if(lvlCB) lvlCB(data);
         }
         return resolve(data);
       }
