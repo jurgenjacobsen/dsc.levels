@@ -72,7 +72,7 @@ export class Levels extends Base {
           await this.db.add(`${userID}.textLevel`, 1);
           await this.db.subtract(`${userID}.textXp`, neededXP);
           this.emit('levelup', type, userID, data);
-          if(lvlCB) lvlCB(data);
+          if(lvlCB) lvlCB('TEXT', data);
         }
         return resolve(data);
       } else if(type === 'VOICE') {
@@ -82,7 +82,7 @@ export class Levels extends Base {
           await this.db.add(`${userID}.voiceLevel`, 1);
           await this.db.subtract(`${userID}.voiceXp`, neededXP);
           this.emit('levelup', type, userID, data);
-          if(lvlCB) lvlCB(data);
+          if(lvlCB) lvlCB('VOICE', data);
         }
         return resolve(data);
       }
@@ -111,5 +111,5 @@ export interface LevelsOptions  {
 export type XPType = 'VOICE' | 'TEXT';
 
 export interface levelUpCB {
-  (data: User): Promise<void | any>;
+  (type: XPType, data: User): Promise<void | any>;
 }
