@@ -9,8 +9,10 @@ export class Levels extends Base {
     super();
 
     this.defaultData = {
-      xp: 0,
-      level: 1,
+      voiceXp: 0,
+      voiceLevel: 1,
+      textXp: 0,
+      textLevel: 1,
     }
 
     this.db = new Database({
@@ -31,24 +33,39 @@ export class Levels extends Base {
     });
   }
 
-  public leaderboard(limit?: number): Promise<LeaderboardUser[]> {
+  public leaderboard(type: XPType, limit?: number): Promise<LeaderboardUser[]> {
     return new Promise(async (resolve) => {
       let data = await this.db.all();
       let arr: LeaderboardUser[] = [];
-      data.sort((a, b) => b.data.xp - a.data.xp).forEach((obj, i) => {
-        arr.push({
-          pos: i + 1,
-          xp: obj.data.xp,
-          level: obj.data.level,
-          userID: obj.ID,
-        })
-      });
+      if(type === 'TEXT') {
+        data.sort((a, b) => b.data.textXp - a.data.textXp).forEach((obj, i) => {
+          arr.push({
+            pos: i + 1,
+            textXp: obj.data.textXp,
+            textLevel: obj.data.textLevel,
+            voiceLevel: obj.data.voiceLevel,
+            voiceXp: obj.data.voiceXp,
+            userID: obj.ID,
+          });
+        });
+      } else if(type === 'VOICE') {
+        data.sort((a, b) => b.data.voiceXp - a.data.voiceXp).forEach((obj, i) => {
+          arr.push({
+            pos: i + 1,
+            textXp: obj.data.textXp,
+            textLevel: obj.data.textLevel,
+            voiceLevel: obj.data.voiceLevel,
+            voiceXp: obj.data.voiceXp,
+            userID: obj.ID,
+          });
+        });
+      };
       if(typeof limit === 'number' && limit > 0) resolve(arr.slice(0, limit));
       resolve(arr);
     });
   }
 
-  public add(userID: string, xp?: number): Promise<User> {
+  public add(userID: string, type: XPType, xp?: number): Promise<User> {
     return new Promise(async (resolve, reject) => {
       if(typeof userID !== 'string') return reject('userID must be provided and string type');
       if(typeof xp !== 'number') return reject('You should provide xp parameter!');
@@ -56,21 +73,34 @@ export class Levels extends Base {
 
       if(!isNaN(xp)) return reject(`Xp isn't a valid number`);
 
-      let neededXP = this.getNeededXP(data.level);
-      data = await this.db.add(`${userID}.xp`, xp);
-      if(data.xp >= neededXP) {
-        await this.db.add(`${userID}.level`, 1);
-        await this.db.subtract(`${userID}.xp`, neededXP);
-        this.emit('levelup', userID, data);
+      if(type === 'TEXT') {
+        let neededXP = this.getNeededXP(data.textLevel);
+        data = await this.db.add(`${userID}.textXp`, xp);
+        if(data.textXp >= neededXP) {
+          await this.db.add(`${userID}.textLevel`, 1);
+          await this.db.subtract(`${userID}.textXp`, neededXP);
+          this.emit('levelup', type, userID, data);
+        }
+        return resolve(data);
+      } else if(type === 'VOICE') {
+        let neededXP = this.getNeededXP(data.voiceLevel);
+        data = await this.db.add(`${userID}.voiceXp`, xp);
+        if(data.textXp >= neededXP) {
+          await this.db.add(`${userID}.voiceLevel`, 1);
+          await this.db.subtract(`${userID}.voiceXp`, neededXP);
+          this.emit('levelup', type, userID, data);
+        }
+        return resolve(data);
       }
-      return resolve(data);
     });
   }
 }
 
 export interface User {
-  xp: number;
-  level: number;
+  voiceXp: number;
+  voiceLevel: number;
+  textXp: number;
+  textLevel: number;
 }
 
 export interface LeaderboardUser extends User {
@@ -83,3 +113,5 @@ export interface LevelsOptions  {
   mongoUser: string;
   mongoPass: string;
 }
+
+export type XPType = 'VOICE' | 'TEXT';
