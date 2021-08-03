@@ -1,4 +1,4 @@
-import { Database } from "dsc.db";
+import { Data, Database } from "dsc.db";
 import { Base } from "./Base";
 import _ from 'lodash';
 
@@ -37,29 +37,22 @@ export class Levels extends Base {
     return new Promise(async (resolve) => {
       let data = await this.db.all();
       let arr: LeaderboardUser[] = [];
-      if(type === 'TEXT') {
-        data.sort((a, b) => b.data.textXp - a.data.textXp).forEach((obj, i) => {
-          arr.push({
-            pos: i + 1,
-            textXp: obj.data.textXp,
-            textLevel: obj.data.textLevel,
-            voiceLevel: obj.data.voiceLevel,
-            voiceXp: obj.data.voiceXp,
-            userID: obj.ID,
-          });
-        });
-      } else if(type === 'VOICE') {
-        data.sort((a, b) => b.data.voiceXp - a.data.voiceXp).forEach((obj, i) => {
-          arr.push({
-            pos: i + 1,
-            textXp: obj.data.textXp,
-            textLevel: obj.data.textLevel,
-            voiceLevel: obj.data.voiceLevel,
-            voiceXp: obj.data.voiceXp,
-            userID: obj.ID,
-          });
-        });
+      let fn = (a: Data, b: Data) => b.data.textXp - a.data.textXp;
+
+      if(type === 'VOICE') {
+        fn = (a: Data, b: Data) => b.data.voiceXp - a.data.voiceXp;
       };
+
+      data.sort(fn).forEach((obj, i) => {
+        arr.push({
+          pos: i + 1,
+          textXp: obj.data.textXp,
+          textLevel: obj.data.textLevel,
+          voiceLevel: obj.data.voiceLevel,
+          voiceXp: obj.data.voiceXp,
+          userID: obj.ID,
+        });
+      });
       if(typeof limit === 'number' && limit > 0) resolve(arr.slice(0, limit));
       resolve(arr);
     });
