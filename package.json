@@ -1,6 +1,6 @@
 {
   "name": "dsc.levels",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "A levelling package for discord.js",
   "main": "lib/Levels.js",
   "types": "lib/Levels.d.ts",
