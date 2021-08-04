@@ -63,8 +63,6 @@ export class Levels extends Base {
       if(typeof xp !== 'number') return reject('You should provide xp parameter!');
       let data: User = await this.db.ensure(userID);
 
-      if(!isNaN(xp)) return reject(`Xp isn't a valid number`);
-
       if(type === 'TEXT') {
         let neededXP = this.getNeededXP(data.textLevel);
         data = await this.db.add(`${userID}.textXp`, xp);
