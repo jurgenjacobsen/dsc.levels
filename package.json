@@ -28,7 +28,7 @@
     "typescript": "^4.3.5"
   },
   "dependencies": {
-    "dsc.db": "^1.2.2",
+    "dsc.db": "^2.0.1",
     "events": "^3.3.0"
   }
 }

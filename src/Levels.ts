@@ -17,10 +17,8 @@ export class Levels extends Base {
     this.db = new Database({
       mongoURL: options.mongoURL,
       collection: 'LEVELS',
-      connectionOptions: {
-        pass: options.mongoPass,
-        user: options.mongoUser,
-      },
+      mongoPass: options.mongoPass,
+      mongoUser: options.mongoUser,
       defaultData: this.defaultData,
     });
   }
