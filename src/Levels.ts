@@ -74,7 +74,7 @@ export class Levels extends Base {
       } else if(type === 'VOICE') {
         let neededXP = this.getNeededXP(data.voiceLevel);
         data = await this.db.add(`${userID}.voiceXp`, xp);
-        if(data.textXp >= neededXP) {
+        if(data.voiceXp >= neededXP) {
           await this.db.add(`${userID}.voiceLevel`, 1);
           await this.db.subtract(`${userID}.voiceXp`, neededXP);
           this.emit('levelup', type, userID, data);
