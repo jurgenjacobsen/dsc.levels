@@ -1,19 +1,14 @@
-import EventEmitter from "events";
+import { EventEmitter } from 'events';
+import { LevelsOptions } from './Levels';
+import { Util } from './Util';
 
 export class Base extends EventEmitter {
-  constructor() {
-    super()
-  }
+  public options: LevelsOptions;
+  public util: Util;
+  constructor(options: LevelsOptions) {
+    super();
 
-  public getNeededXP(lvl: number): number {
-    return (lvl * lvl * 100);
-  };
-
-  public getLevelFromXp(xp: number):number {
-    return (Math.sqrt(xp / 100));
-  }
-
-  public random(min: number, max: number): number {
-    return Math.random() * (max - min) + min;
+    this.options = options;
+    this.util = Util;
   }
 }

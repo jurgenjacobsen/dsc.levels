@@ -1,111 +1,157 @@
-import { Data, Database } from "dsc.db";
-import { Base } from "./Base";
-
+import { Base } from './Base';
+import { Data, Database } from 'dsc.db';
+import { Util } from './Util';
 export class Levels extends Base {
-  public db: Database;
-  public defaultData: User;
+  private db: Database;
   constructor(options: LevelsOptions) {
-    super();
-
-    this.defaultData = {
-      voiceXp: 0,
-      voiceLevel: 1,
-      textXp: 0,
-      textLevel: 1,
-    }
+    super(options);
 
     this.db = new Database({
-      mongoURL: options.mongoURL,
+      ...options,
       collection: 'levels',
-      mongoPass: options.mongoPass,
-      mongoUser: options.mongoUser,
-      defaultData: this.defaultData,
     });
   }
 
-  public fetch(userID: string): Promise<User> {
+  public ensure(userID: string, guildID?: string): Promise<User> {
     return new Promise(async (resolve) => {
-      let data = await this.db.ensure(userID);
-      resolve(data);
+      if (typeof userID !== 'string') throw new Error('userID should be a string');
+      if (guildID && typeof guildID !== 'string') throw new Error('guildID should be a string');
+
+      let raw = await this.fetch(userID, guildID);
+
+      if (!raw) {
+        let { data } = await this.db.set(Util.key(userID, guildID), {
+          userID: userID,
+          guildID: userID,
+          voiceXp: 0,
+          voiceLevel: 0,
+          textXp: 0,
+          textLevel: 0,
+        });
+        raw = data;
+      }
+
+      return resolve(raw as User);
     });
   }
 
-  public leaderboard(type: XPType, limit?: number): Promise<LeaderboardUser[]> {
+  public fetch(userID: string, guildID?: string): Promise<User | null> {
     return new Promise(async (resolve) => {
-      let data = await this.db.all();
+      if (typeof userID !== 'string') throw new Error('userID should be a string');
+      if (guildID && typeof guildID !== 'string') throw new Error('guildID should be a string');
+      let raw: Data | null;
+      if (userID && guildID) {
+        raw = await this.db.fetch({ 'data.userID': userID, 'data.guildID': guildID });
+      } else {
+        raw = await this.db.fetch({ 'data.userID': userID });
+      }
+      if (!raw) raw = null;
+      return resolve(raw?.data);
+    });
+  }
+
+  public leaderboard(options: LeaderboardOptions): Promise<LeaderboardUser[]> {
+    return new Promise(async (resolve) => {
+      let query = typeof options.guildID !== 'string' ? {} : { 'data.guildID': options.guildID };
+      let raw: Data[] = await this.db.schema.find(query);
       let arr: LeaderboardUser[] = [];
-      let fn = (a: Data, b: Data) => b.data.textXp - a.data.textXp;
+      let sorter = (a: Data, b: Data) => b.data.textXp - a.data.textXp;
+      if (options.type === 'VOICE') {
+        sorter = (a: Data, b: Data) => b.data.voiceXp - a.data.voiceXp;
+      }
 
-      if(type === 'VOICE') {
-        fn = (a: Data, b: Data) => b.data.voiceXp - a.data.voiceXp;
-      };
-
-      data.sort(fn).forEach((obj, i) => {
+      raw.sort(sorter).forEach((user, i) => {
         arr.push({
           pos: i + 1,
-          textXp: obj.data.textXp,
-          textLevel: obj.data.textLevel,
-          voiceLevel: obj.data.voiceLevel,
-          voiceXp: obj.data.voiceXp,
-          userID: obj.ID,
+          textLevel: user.data.textLevel,
+          textXp: user.data.textXp,
+          voiceLevel: user.data.voiceLevel,
+          voiceXp: user.data.voiceXp,
+          userID: user.data.userID,
+          guildID: user.data.guildID ?? null,
         });
       });
-      if(typeof limit === 'number' && limit > 0) resolve(arr.slice(0, limit));
-      resolve(arr);
+
+      if (typeof options.limit === 'number' && options.limit > 0) return resolve(arr.slice(0, options.limit));
+      return resolve(arr);
     });
   }
 
-  public add(userID: string, type: XPType, xp: number, lvlCB?: levelUpCB): Promise<User> {
-    return new Promise(async (resolve, reject) => {
-      if(typeof userID !== 'string') return reject('userID must be provided and string type');
-      if(typeof xp !== 'number') return reject('You should provide xp parameter!');
-      let data: User = await this.db.ensure(userID);
+  public update(userID: string, type: TypeXP, xp: number, guildID?: string, cb?: LevelUpCB): Promise<User> {
+    return new Promise(async (resolve) => {
+      if (typeof userID !== 'string') throw new Error('userID should be string');
+      if (typeof type !== 'string' && ['TEXT', 'VOICE'].includes(type)) throw new Error('type should be TEXT or VOICE');
+      if (typeof xp !== 'number') throw new Error('XP should be type number');
+      if (guildID && typeof guildID !== 'string') throw new Error('guildID should be string');
+      if (cb && typeof cb !== 'function') throw new Error('Callback parameter should be a function');
 
-      if(type === 'TEXT') {
-        let neededXP = this.getNeededXP(data.textLevel);
-        data = await this.db.add(`${userID}.textXp`, xp);
-        if(data.textXp >= neededXP) {
-          await this.db.add(`${userID}.textLevel`, 1);
-          await this.db.subtract(`${userID}.textXp`, neededXP);
-          this.emit('levelup', type, userID, data);
-          if(lvlCB) lvlCB('TEXT', data);
-        }
-        return resolve(data);
-      } else if(type === 'VOICE') {
-        let neededXP = this.getNeededXP(data.voiceLevel);
-        data = await this.db.add(`${userID}.voiceXp`, xp);
-        if(data.voiceXp >= neededXP) {
-          await this.db.add(`${userID}.voiceLevel`, 1);
-          await this.db.subtract(`${userID}.voiceXp`, neededXP);
-          this.emit('levelup', type, userID, data);
-          if(lvlCB) lvlCB('VOICE', data);
-        }
-        return resolve(data);
+      let data = await this.ensure(userID, guildID);
+      let key = Util.key(userID, guildID);
+      switch (type) {
+        case 'TEXT':
+          {
+            let nxp = Util.getNeededXP(data.textLevel, data.textXp);
+            let raw = (await this.db.add(key + '.textXp', xp)) as Data;
+            if (raw.data.textXp >= nxp) {
+              await this.db.add(key + '.textLevel', 1);
+              data = (await this.fetch(userID, guildID)) as User;
+              this.emit('textLevelUp', data);
+              if (cb) cb(data);
+            }
+          }
+          break;
+        case 'VOICE':
+          {
+            let nxp = Util.getNeededXP(data.voiceLevel, data.voiceXp);
+            let raw = (await this.db.add(key + '.voiceXp', xp)) as Data;
+            if (raw.data.voiceXp >= nxp) {
+              await this.db.add(key + '.voiceLevel', 1);
+              data = (await this.fetch(userID, guildID)) as User;
+              this.emit('voiceLevelUp', data);
+              if (cb) cb(data);
+            }
+          }
+          break;
       }
     });
   }
 }
 
+export interface LevelsOptions {
+  /** MongoDB connection uri */
+  uri: string;
+  /** Name of your database */
+  name: string;
+  /** Your mongodb user */
+  user: string;
+  /** Your mongodb user pass */
+  pass: string;
+}
+
+export interface LevelUpCB {
+  (user: User): Promise<any> | any;
+}
+
+export type TypeXP = 'VOICE' | 'TEXT';
+
 export interface User {
+  userID: string;
+  guildID: string | null;
   voiceXp: number;
   voiceLevel: number;
   textXp: number;
   textLevel: number;
 }
 
+export interface LeaderboardOptions {
+  type: TypeXP;
+  guildID?: string;
+  limit?: number;
+}
 export interface LeaderboardUser extends User {
   pos: number;
-  userID: string;
 }
 
-export interface LevelsOptions  {
-  mongoURL: string;
-  mongoUser: string;
-  mongoPass: string;
-}
-
-export type XPType = 'VOICE' | 'TEXT';
-
-export interface levelUpCB {
-  (type: XPType, data: User): Promise<void | any>;
+export interface LevelUp extends User {
+  levelUp: boolean;
 }
