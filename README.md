@@ -1,5 +1,5 @@
 # dsc.levels
-A very simple package for levels in discord.js.
+A text and voice level system for discord.js
 
 `npm i dsc.levels`
 
