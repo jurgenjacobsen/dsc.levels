@@ -45,8 +45,8 @@ export class Levels extends Base {
       } else {
         raw = await this.db.fetch({ 'data.userID': userID });
       }
-      if (!raw) raw = null;
-      return resolve(raw?.data);
+      if (!raw) return resolve(null);
+      return resolve(raw.data);
     });
   }
 
@@ -80,7 +80,7 @@ export class Levels extends Base {
   public update(userID: string, type: TypeXP, xp: number, guildID?: string, cb?: LevelUpCB): Promise<User> {
     return new Promise(async (resolve) => {
       if (typeof userID !== 'string') throw new Error('userID should be string');
-      if (typeof type !== 'string' && ['TEXT', 'VOICE'].includes(type)) throw new Error('type should be TEXT or VOICE');
+      if (typeof type !== 'string' || !['TEXT', 'VOICE'].includes(type)) throw new Error('type should be TEXT or VOICE');
       if (typeof xp !== 'number') throw new Error('XP should be type number');
       if (guildID && typeof guildID !== 'string') throw new Error('guildID should be string');
       if (cb && typeof cb !== 'function') throw new Error('Callback parameter should be a function');
@@ -113,6 +113,7 @@ export class Levels extends Base {
           }
           break;
       }
+      return resolve(await this.fetch(userID, guildID) as User);
     });
   }
 }
