@@ -22,7 +22,7 @@ export class Levels extends Base {
       if (!raw) {
         let { data } = await this.db.set(Util.key(userID, guildID), {
           userID: userID,
-          guildID: userID,
+          guildID: guildID,
           voiceXp: 0,
           voiceLevel: 0,
           textXp: 0,
