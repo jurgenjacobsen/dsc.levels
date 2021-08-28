@@ -1,6 +1,6 @@
 {
   "name": "dsc.levels",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A text and voice level system for discord.js",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
