@@ -24,9 +24,9 @@ export class Levels extends Base {
           userID: userID,
           guildID: guildID,
           voiceXp: 0,
-          voiceLevel: 0,
+          voiceLevel: 1,
           textXp: 0,
-          textLevel: 0,
+          textLevel: 1,
         });
         raw = data;
       }
@@ -118,7 +118,7 @@ export class Levels extends Base {
   }
 
   public getTotalXPToLevelUp(lvl: number, xp: number): number {
-    return 5 * (lvl * lvl) + (50 * lvl) + 100 + xp;
+    return Math.floor(Math.pow(5 * (lvl * lvl) + (50 * lvl), 1.3));
   }
 }
 
