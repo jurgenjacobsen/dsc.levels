@@ -90,7 +90,7 @@ export class Levels extends Base {
       switch (type) {
         case 'TEXT':
           {
-            let nxp = Util.getNeededXP(data.textLevel, data.textXp);
+            let nxp = this.getNeededXP(data.textLevel, data.textXp);
             let raw = (await this.db.add(key + '.textXp', xp)) as Data;
             if (raw.data.textXp >= nxp) {
               await this.db.add(key + '.textLevel', 1);
@@ -102,7 +102,7 @@ export class Levels extends Base {
           break;
         case 'VOICE':
           {
-            let nxp = Util.getNeededXP(data.voiceLevel, data.voiceXp);
+            let nxp = this.getNeededXP(data.voiceLevel, data.voiceXp);
             let raw = (await this.db.add(key + '.voiceXp', xp)) as Data;
             if (raw.data.voiceXp >= nxp) {
               await this.db.add(key + '.voiceLevel', 1);
@@ -113,8 +113,12 @@ export class Levels extends Base {
           }
           break;
       }
-      return resolve(await this.fetch(userID, guildID) as User);
+      return resolve((await this.fetch(userID, guildID)) as User);
     });
+  }
+
+  public getNeededXP(lvl: number, xp: number): number {
+    return 5 * (lvl ^ 2) + 50 * lvl + 100;
   }
 }
 
